@@ -7,6 +7,12 @@ import pandas as pd
 # Cargar el dataset
 df = pd.read_csv('HRDataset_v14.csv')
 
+# Convertir columnas de fechas a formato datetime
+date_columns = ['DOB', 'DateofHire', 'DateofTermination', 'LastPerformanceReview_Date']
+for col in date_columns:
+    if col in df.columns:
+        df[col] = pd.to_datetime(df[col], errors='coerce')
+
 # Inicializar la aplicación Dash
 app = dash.Dash(__name__)
 
@@ -57,14 +63,23 @@ def update_graph_and_legend(chart_type, x_axis, y_axis):
     
     if chart_type == 'bar':
         fig = px.bar(df, x=x_axis, y=y_axis, title=title, color=x_axis,
-                     labels={x_axis: x_axis.replace('_', ' '), y_axis: y_axis.replace('_', ' ')})
+                     labels={x_axis: x_axis.replace('_', ' '), y_axis: y_axis.replace('_', ' ')},
+                     color_discrete_sequence=px.colors.qualitative.Plotly)
     elif chart_type == 'scatter':
         fig = px.scatter(df, x=x_axis, y=y_axis, title=title, color=x_axis,
-                         labels={x_axis: x_axis.replace('_', ' '), y_axis: y_axis.replace('_', ' ')})
+                         labels={x_axis: x_axis.replace('_', ' '), y_axis: y_axis.replace('_', ' ')},
+                         color_discrete_sequence=px.colors.qualitative.Plotly)
     elif chart_type == 'line':
-        fig = px.line(df, x=x_axis, y=y_axis, title=title, color=x_axis,
-                      labels={x_axis: x_axis.replace('_', ' '), y_axis: y_axis.replace('_', ' ')})
-
+        # Ordenar por la columna x_axis si es una fecha
+        if pd.api.types.is_datetime64_any_dtype(df[x_axis]):
+            df_sorted = df.sort_values(by=x_axis)
+        else:
+            df_sorted = df.copy()
+        
+        fig = px.line(df_sorted, x=x_axis, y=y_axis, title=title,
+                      labels={x_axis: x_axis.replace('_', ' '), y_axis: y_axis.replace('_', ' ')},
+                      color_discrete_sequence=px.colors.qualitative.Plotly)
+    
     fig.update_layout(
         title={'x': 0.5},
         template='plotly_white',
@@ -75,6 +90,7 @@ def update_graph_and_legend(chart_type, x_axis, y_axis):
         title_x=0.5,
         xaxis=dict(showgrid=False),
         yaxis=dict(showgrid=False),
+        plot_bgcolor='rgba(240, 240, 240, 0.5)'
     )
     
     legend_text = f"Este gráfico muestra la relación entre '{x_axis}' y '{y_axis}' utilizando un gráfico de tipo '{chart_type}'."
@@ -84,3 +100,8 @@ def update_graph_and_legend(chart_type, x_axis, y_axis):
 # Ejecutar la aplicación
 if __name__ == '__main__':
     app.run_server(debug=True)
+
+#--------------------------------------------------------------------------------
+#Link del Video: https://drive.google.com/file/d/1Tvmkj9VSZJkmkfxLs-VzvsWEzWFNJDI0/view?usp=sharing
+#Usa la cuenta del tec para poder acceder al video
+#--------------------------------------------------------------------------------
