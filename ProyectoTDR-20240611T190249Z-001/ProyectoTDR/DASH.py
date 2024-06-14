@@ -1,4 +1,3 @@
-
 import base64
 import dash
 from dash import dcc
@@ -6,8 +5,7 @@ from dash import html
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import pandas as pd
-from dash.dcc import *
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 
 # Paletas de colores
 logoTDR = ["#20448C", "#1B3059", "#F2B705", "#F29F05"]
@@ -16,8 +14,7 @@ monocromaticosTDR = ["#465E8C", "#1B3059", "#8699BF", "#B3CCFF"]
 monocromaticosLIVER = ["#a64985", "#b4639b", "#c17db0", "#cf96c5", '#ebc9ec']
 
 # Cargar los datos
-file_path = 'CostoPrevisto_vs_CostoReal.xlsx'
-df = pd.read_excel(file_path)
+df = pd.read_excel('CostoPrevisto_vs_CostoReal.xlsx')
 df2 = pd.read_excel('dispach_ordenesidentificadas.xlsx')
 
 # Crear una nueva columna para la ruta
@@ -126,7 +123,8 @@ app.layout = html.Div([
                                 color='Ruta',
                                 color_discrete_sequence=logoLIVER
                             )
-                        ),html.H2('Rutas con más kilómetros', style={'color': 'white', 'text-align': 'center', 'backgroundColor': '#20448C'}),
+                        ),
+                        html.H2('Rutas con más kilómetros', style={'color': 'white', 'text-align': 'center', 'backgroundColor': '#20448C'}),
                         dcc.Graph(
                             id='bar-chart-kilometros',
                             figure=px.bar(
@@ -161,7 +159,7 @@ app.layout = html.Div([
                         figure=px.box(df2, x='Ruta', y='Costo Caseta', title='Costos de Caseta por Ruta', color='Ruta',
                                       color_discrete_sequence=logoLIVER)
                     )
-                ],style={'backgroundColor': '#FFDD00'} )
+                ], style={'backgroundColor': '#FFDD00'} )
             ],
             tab_id='Comparación',
             label_style={'backgroundColor': '#FFDD00'}
@@ -185,7 +183,6 @@ app.layout = html.Div([
                         id='bar-chart-faltante-signo',
                         figure=fig_faltante_signo
                     ),
-
                     html.H2('Top 5 RUTA NUMERO con Mayor Faltante', style={'color': 'white', 'text-align': 'center', 'backgroundColor': '#20448C'}),
                     dcc.Graph(
                         id='bar-chart-top5-faltante',
@@ -197,13 +194,60 @@ app.layout = html.Div([
                         options=[{'label': sistema, 'value': sistema} for sistema in df['Sistema'].unique()],
                         value=df['Sistema'].unique()[0]
                     ),
-
                     dcc.Graph(id='bar-chart-faltante-sistema')
-                ], style={'backgroundColor': '#FFDD00'}
-                )
+                ], style={'backgroundColor': '#FFDD00'} )
             ],
-            #tab_id='Comparación',
             label_style={'backgroundColor': '#FFDD00'}
+        ),
+        dbc.Tab(
+            label='Subir archivo',
+            children=[
+                html.Div([
+                    html.H1('Subir archivo 1', style={'color': 'white', 'text-align': 'center', 'backgroundColor': '#20448C'}),
+                    dcc.Upload(
+                        id='upload-data',
+                        children=html.Div([
+                            'Drag and Drop or ',
+                            html.A('Select Files')
+                        ]),
+                        style={
+                            'width': '100%',
+                            'height': '60px',
+                            'lineHeight': '60px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center',
+                            'margin': '10px',
+                            'backgroundColor': '#ADD8E6'  # Fondo azul claro para el área de arrastrar y soltar
+                        },
+                        multiple=True
+                    ),
+                    html.Div(id='output-data-upload', style={'padding': '10px'}),  # Fondo amarillo para el contenedor de salida
+                    html.H1('Subir archivo 2', style={'color': 'white', 'text-align': 'center', 'backgroundColor': '#20448C'}),
+                    dcc.Upload(
+                        id='upload-data-2',
+                        children=html.Div([
+                            'Drag and Drop or ',
+                            html.A('Select Files')
+                        ]),
+                        style={
+                            'width': '100%',
+                            'height': '60px',
+                            'lineHeight': '60px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center',
+                            'margin': '10px',
+                            'backgroundColor': '#ADD8E6'  # Fondo azul claro para el área de arrastrar y soltar
+                        },
+                        multiple=True
+                    ),
+                    html.Div(id='output-data-upload-2', style={'padding': '10px'})  # Fondo amarillo para el contenedor de salida
+                ], style={'backgroundColor': '#ADD8E6'})  # Fondo azul claro para el contenido de la pestaña
+            ],
+            label_style={'backgroundColor': '#ADD8E6'}  # Fondo azul claro para la pestaña en sí
         )
     ])
 ])
@@ -221,14 +265,36 @@ def update_faltante_sistema(selected_sistema):
                  title=f'Faltante a través del tiempo con colores por signo ({selected_sistema})')
     return fig
 
+# Callback para mostrar los nombres de los archivos subidos
+@app.callback(
+    Output('output-data-upload', 'children'),
+    Input('upload-data', 'contents'),
+    State('upload-data', 'filename'),
+    State('upload-data', 'last_modified')
+)
+def update_output(list_of_contents, list_of_names, list_of_dates):
+    if list_of_contents is not None:
+        children = [
+            html.H5('Archivos subidos:'),
+            html.Ul([html.Li(name) for name in list_of_names])
+        ]
+        return children
+
+# Callback para mostrar los nombres de los archivos subidos en el segundo botón
+@app.callback(
+    Output('output-data-upload-2', 'children'),
+    Input('upload-data-2', 'contents'),
+    State('upload-data-2', 'filename'),
+    State('upload-data-2', 'last_modified')
+)
+def update_output_2(list_of_contents, list_of_names, list_of_dates):
+    if list_of_contents is not None:
+        children = [
+            html.H5('Archivos subidos:'),
+            html.Ul([html.Li(name) for name in list_of_names])
+        ]
+        return children
+
 # Ejecutar la aplicación
 if __name__ == '__main__':
     app.run_server(debug=True)
-
-
-
-# In[ ]:
-
-
-
-
